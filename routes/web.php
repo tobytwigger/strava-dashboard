@@ -19,8 +19,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('dashboard/{team_slug}', [DashboardController::class, 'index'])->name('dashboard');
+
 Route::middleware(['auth:sanctum', 'verified'])->group(function() {
-    Route::get('dashboard/{team_slug}', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('home', [\App\Http\Controllers\HomeController::class, 'index'])->name('home');
     Route::get('connect', [StravaController::class, 'index'])->name('strava.connect');
 

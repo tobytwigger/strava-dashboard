@@ -7,7 +7,7 @@ use App\Models\Team;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Component;
 
-class TotalDistance extends Component
+class TextUpdate extends Component
 {
 
     /** @var string */

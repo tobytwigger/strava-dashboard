@@ -7,7 +7,7 @@ use App\Models\Team;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Component;
 
-class TotalDistance extends Component
+class TotalElevation extends Component
 {
 
     /** @var string */
@@ -26,16 +26,16 @@ class TotalDistance extends Component
 
         $meters = array_reduce(
             $activities->toArray(),
-            function(float $totalMetres, array $stravaActivity): float {
-                $totalMetres += $stravaActivity['distance'];
-                return $totalMetres;
+            function(float $totalElevation, array $stravaActivity): float {
+                $totalElevation += $stravaActivity['elevation_gain'];
+                return $totalElevation;
             },
             0.0
         );
-        return view('tiles.total-distance', [
-            'distanceInKilometers' => $meters / 1000,
-            'distanceInMiles' => $meters / 1600,
-            'distanceInMeters' => $meters,
+        return view('tiles.total-elevation', [
+            'elevationInKilometers' => $meters / 1000,
+            'elevationInMiles' => $meters / 1600,
+            'elevationInMeters' => $meters,
         ]);
     }
 

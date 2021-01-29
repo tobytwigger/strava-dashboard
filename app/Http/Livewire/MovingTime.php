@@ -4,10 +4,12 @@ namespace App\Http\Livewire;
 
 use App\Models\StravaActivity;
 use App\Models\Team;
+use Carbon\Carbon;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Component;
 
-class TotalDistance extends Component
+class MovingTime extends Component
 {
 
     /** @var string */
@@ -24,18 +26,20 @@ class TotalDistance extends Component
     {
         $activities = $this->team()->stravaActivities;
 
-        $meters = array_reduce(
+        $seconds = array_reduce(
             $activities->toArray(),
-            function(float $totalMetres, array $stravaActivity): float {
-                $totalMetres += $stravaActivity['distance'];
-                return $totalMetres;
+            function(float $totalSeconds, array $stravaActivity): float {
+                $totalSeconds += $stravaActivity['moving_time'];
+                return $totalSeconds;
             },
-            0.0
+            0
         );
-        return view('tiles.total-distance', [
-            'distanceInKilometers' => $meters / 1000,
-            'distanceInMiles' => $meters / 1600,
-            'distanceInMeters' => $meters,
+        return view('tiles.moving-time', [
+            'movingTimeInSeconds' => $seconds,
+            'movingTimeInMinutes' => $seconds / 60,
+            'movingTimeInHours' => $seconds / 3600,
+            'movingTimeInDays' => $seconds / 86400,
+            'movingTimeReadable' => CarbonInterval::seconds($seconds)->forHumans(),
         ]);
     }
 
@@ -43,7 +47,6 @@ class TotalDistance extends Component
     {
         if(!isset($this->team)) {
             $team = request()->route('team_slug');
-
             if($team !== null) {
                 $this->team = $team;
             } else {
