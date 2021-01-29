@@ -1,0 +1,11 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/*Login with Strava button*/
+
+.login-with-strava {
+    background: url('/images/login-with-strava.png');
+    height: 96px;
+    width: 386px;
+}
