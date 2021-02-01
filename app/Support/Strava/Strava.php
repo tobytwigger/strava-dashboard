@@ -4,6 +4,8 @@ namespace App\Support\Strava;
 
 use App\Support\Strava\Authentication\StravaToken;
 use App\Support\Strava\Client\StravaClient;
+use App\Support\Strava\Log\ConnectionLog;
+use App\Support\Team\CurrentTeamResolver;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Auth\AuthenticationException;
@@ -22,7 +24,6 @@ class Strava
         string $state
     ): string
     {
-
         $params = [
             'client_id' => $clientId,
             'redirect_uri' => $redirectUrl,
@@ -31,6 +32,8 @@ class Strava
             'scope' => 'activity:read,read',
             'state  ' => $state
         ];
+
+        app(ConnectionLog::class)->debug('Generating redirect url');
 
         return sprintf('https://www.strava.com/oauth/authorize?%s', http_build_query($params));
     }
@@ -41,19 +44,32 @@ class Strava
         string $code
     ): StravaToken
     {
-        $response = $this->client->request('post', 'https://www.strava.com/oauth/token', [
-            'query' => [
-                'client_id' => $clientId,
-                'client_secret' => $clientSecret,
-                'code' => $code,
-                'grant_type' => 'authorization_code'
-            ]
-        ]);
+        app(ConnectionLog::class)->debug('About to exchange code for token');
+
+        try {
+            $response = $this->client->request('post', 'https://www.strava.com/oauth/token', [
+                'query' => [
+                    'client_id' => $clientId,
+                    'client_secret' => $clientSecret,
+                    'code' => $code,
+                    'grant_type' => 'authorization_code'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            app(ConnectionLog::class)->error(sprintf('Could not get access token from Strava: %s', $e->getMessage()));
+            throw $e;
+        }
+
+        app(ConnectionLog::class)->debug('Access token returned by Strava');
 
         $credentials = json_decode(
             $response->getBody()->getContents(),
             true
         );
+
+        app(ConnectionLog::class)->debug('Decoded access token');
+
+        app(ConnectionLog::class)->success('Initial connection to Strava made successfully');
 
         return StravaToken::create(
             new Carbon((int) $credentials['expires_at']),
@@ -70,36 +86,55 @@ class Strava
         string $refreshToken
     ): StravaToken
     {
-        $response = $this->client->request('post', 'https://www.strava.com/oauth/token', [
-            'query' => [
-                'client_id' => $clientId,
-                'client_secret' => $clientSecret,
-                'refresh_token' => $refreshToken,
-                'grant_type' => 'refresh_token'
-            ]
-        ]);
+        app(ConnectionLog::class)->debug('About to refresh token');
+
+        try {
+
+            $response = $this->client->request('post', 'https://www.strava.com/oauth/token', [
+                'query' => [
+                    'client_id' => $clientId,
+                    'client_secret' => $clientSecret,
+                    'refresh_token' => $refreshToken,
+                    'grant_type' => 'refresh_token'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            app(ConnectionLog::class)->error(sprintf('Could not get refreshed access token from Strava: %s', $e->getMessage()));
+            throw $e;
+        }
+
+        app(ConnectionLog::class)->debug('Refreshed access token returned by Strava');
 
         $credentials = json_decode(
             $response->getBody()->getContents(),
             true
         );
 
-        return StravaToken::create(
+        app(ConnectionLog::class)->debug('Decoded refreshed access token');
+
+        app(ConnectionLog::class)->success('Access token refreshed successfully');
+
+        $stravaToken = StravaToken::create(
             new Carbon((int) $credentials['expires_at']),
             (int)$credentials['expires_in'],
             (string)$credentials['refresh_token'],
             (string)$credentials['access_token'],
         );
+
+        $savedToken = \App\Models\StravaToken::makeFromStravaToken($stravaToken);
+        $savedToken->save();
+
+        return $stravaToken;
     }
 
     public function client(int $teamId = null): StravaClient
     {
         if($teamId === null) {
-            if(!Auth::check()) {
-                throw new AuthenticationException();
-            }
-            $teamId = Auth::user()->currentTeam->id;
+            $teamId = app(CurrentTeamResolver::class)->currentId();
         }
+
+        app(ConnectionLog::class)->debug('Client created ready for connection to Strava');
+
         return $this->clientFactory->create($teamId);
     }
 

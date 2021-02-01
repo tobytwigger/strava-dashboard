@@ -19,6 +19,8 @@ class CreateTeamsTable extends Migration
             $table->string('name');
             $table->boolean('personal_team');
             $table->string('slug')->nullable();
+            $table->unsignedBigInteger('club_id')->nullable();
+            $table->float('start_at')->default(0.0);
             $table->timestamps();
         });
     }

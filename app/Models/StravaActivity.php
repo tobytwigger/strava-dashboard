@@ -2,12 +2,41 @@
 
 namespace App\Models;
 
+use App\Support\Team\CurrentTeamResolver;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class StravaActivity extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::addGlobalScope('valid-time', function (Builder $builder) {
+            $id = Cache::remember(StravaActivity::class . '.smallestId', 7200, function() {
+                $activities = StravaActivity::where('team_id', app(CurrentTeamResolver::class)->currentId())
+                    ->orderBy('id', 'asc')
+                    ->withoutGlobalScopes()
+                    ->get();
+
+                $cumulativeDistance = 0.0;
+                $startDistance = app(CurrentTeamResolver::class)->currentTeam()->start_at;
+
+                return $activities->skipUntil(function ($activity) use ($startDistance, &$cumulativeDistance) {
+                    $cumulativeDistance += $activity->distance;
+                    return $cumulativeDistance >= $startDistance;
+                })->first()->id;
+            });
+
+            $builder->where('id', '>', 5);
+        });
+        static::addGlobalScope('current-team', function (Builder $builder) {
+            $builder->where('team_id', app(CurrentTeamResolver::class)->currentId());
+        });
+    }
 
     protected $fillable = [
         'team_id',
@@ -17,7 +46,7 @@ class StravaActivity extends Model
         'moving_time',
         'elapsed_time',
         'type',
-        'team_id'
+        'ignored'
     ];
 
     protected $casts = [
@@ -27,7 +56,8 @@ class StravaActivity extends Model
         'moving_time' => 'integer',
         'elapsed_time' => 'integer',
         'type' => 'string',
-        'team_id' => 'integer'
+        'team_id' => 'integer',
+        'ignored' => 'boolean',
     ];
 
     public static function makeFromStravaActivity(\App\Support\Strava\Client\Models\StravaActivity $stravaActivity)

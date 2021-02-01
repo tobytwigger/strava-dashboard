@@ -1,6 +1,11 @@
-<x-dashboard-tile :position="$position" refresh-interval="120">
-    <h1>{{$movingTimeReadable}} seconds Moving</h1>
-    <h2>That's {{$movingTimeInDays}} days</h2>
-    <h2>Or {{$movingTimeInHours}} hours</h2>
-    <h2>Or {{$movingTimeInMinutes}} minutes</h2>
+<x-dashboard-tile :position="$position" refresh-interval="60">
+    <x-tile.data-layout
+        title="Moving Time"
+        :data="sprintf('%s (%s)', number_format(round($time, 0)), $unit)">
+        <a href="#" wire:click="setUnit('hrs')">hours</a> |
+        <a href="#" wire:click="setUnit('days')">days</a> |
+        <a href="#" wire:click="setUnit('secs')">seconds</a>
+    </x-tile.data-layout>
+
 </x-dashboard-tile>
+

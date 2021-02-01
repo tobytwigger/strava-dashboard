@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Team\CurrentTeamResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +44,7 @@ class StravaToken extends Model
         $instance->access_token = $token->getAccessToken();
         $instance->refresh_token = $token->getRefreshToken();
         $instance->expires_at = $token->getExpiresAt();
-        $instance->team_id = Auth::user()->currentTeam->id;
+        $instance->team_id = app(CurrentTeamResolver::class)->currentId();
         $instance->disabled = false;
 
         return $instance;

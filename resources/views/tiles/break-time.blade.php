@@ -1,6 +1,11 @@
-<x-dashboard-tile :position="$position" refresh-interval="120">
-    <h1>{{$breakTimeReadable}} seconds on a break</h1>
-    <h2>That's {{$breakTimeInDays}} days</h2>
-    <h2>Or {{$breakTimeInHours}} hours</h2>
-    <h2>Or {{$breakTimeInMinutes}} minutes</h2>
+<x-dashboard-tile :position="$position" refresh-interval="60">
+    <x-tile.data-layout
+        title="Break Time"
+        :data="sprintf('%s (%s)', number_format(round($time, 0)), $unit)">
+        <a href="#" wire:click="setUnit('hrs')">hours</a> |
+        <a href="#" wire:click="setUnit('days')">days</a> |
+        <a href="#" wire:click="setUnit('secs')">seconds</a>
+    </x-tile.data-layout>
+
 </x-dashboard-tile>
+

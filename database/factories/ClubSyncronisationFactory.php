@@ -2,19 +2,18 @@
 
 namespace Database\Factories;
 
-use App\Models\StravaToken;
+use App\Models\ClubSyncronisation;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
-class StravaTokenFactory extends Factory
+class ClubSyncronisationFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
      *
      * @var string
      */
-    protected $model = StravaToken::class;
+    protected $model = ClubSyncronisation::class;
 
     /**
      * Define the model's default state.
@@ -24,11 +23,8 @@ class StravaTokenFactory extends Factory
     public function definition()
     {
         return [
-            'expires_at' => $this->faker->dateTimeBetween('now', '+6 hours'),
-            'refresh_token' => Str::random(15),
-            'access_token' => Str::random(15),
             'team_id' => fn () => Team::factory(),
-            'disabled' => false
+            'record_count' => $this->faker->numberBetween(0, 1000)
         ];
     }
 }

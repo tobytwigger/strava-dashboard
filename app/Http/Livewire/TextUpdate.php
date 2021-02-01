@@ -4,6 +4,7 @@ namespace App\Http\Livewire;
 
 use App\Models\StravaActivity;
 use App\Models\Team;
+use App\Support\Team\CurrentTeamResolver;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Livewire\Component;
 
@@ -13,8 +14,6 @@ class TextUpdate extends Component
     /** @var string */
     public $position;
 
-    public Team $team;
-
     public function mount(string $position)
     {
         $this->position = $position;
@@ -22,7 +21,7 @@ class TextUpdate extends Component
 
     public function render()
     {
-        $activities = $this->team()->stravaActivities;
+        $activities = StravaActivity::all();
 
         $meters = array_reduce(
             $activities->toArray(),
@@ -37,21 +36,6 @@ class TextUpdate extends Component
             'distanceInMiles' => $meters / 1600,
             'distanceInMeters' => $meters,
         ]);
-    }
-
-    public function team()
-    {
-        if(!isset($this->team)) {
-            $team = request()->route('team_slug');
-
-            if($team !== null) {
-                $this->team = $team;
-            } else {
-                throw new ModelNotFoundException('Could not find team');
-            }
-        }
-
-        return $this->team;
     }
 
 }

@@ -2,56 +2,18 @@
 
 namespace App\Http\Livewire;
 
-use App\Models\StravaActivity;
-use App\Models\Team;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Livewire\Component;
+use App\Http\Livewire\Base\LengthComponent;
 
-class TotalElevation extends Component
+class TotalElevation extends LengthComponent
 {
 
-    /** @var string */
-    public $position;
+    public string $view = 'tiles.total-elevation';
 
-    public Team $team;
-
-    public function mount(string $position)
+    protected function extractLength(float $totalMeters, array $stravaActivity): float
     {
-        $this->position = $position;
+        $totalMeters += $stravaActivity['elevation_gain'];
+        return $totalMeters;
     }
-
-    public function render()
-    {
-        $activities = $this->team()->stravaActivities;
-
-        $meters = array_reduce(
-            $activities->toArray(),
-            function(float $totalElevation, array $stravaActivity): float {
-                $totalElevation += $stravaActivity['elevation_gain'];
-                return $totalElevation;
-            },
-            0.0
-        );
-        return view('tiles.total-elevation', [
-            'elevationInKilometers' => $meters / 1000,
-            'elevationInMiles' => $meters / 1600,
-            'elevationInMeters' => $meters,
-        ]);
-    }
-
-    public function team()
-    {
-        if(!isset($this->team)) {
-            $team = request()->route('team_slug');
-
-            if($team !== null) {
-                $this->team = $team;
-            } else {
-                throw new ModelNotFoundException('Could not find team');
-            }
-        }
-
-        return $this->team;
-    }
-
 }
+
+

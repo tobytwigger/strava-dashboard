@@ -19,6 +19,8 @@ class Team extends JetstreamTeam
      */
     protected $casts = [
         'personal_team' => 'boolean',
+        'club_id' => 'integer',
+        'start_at' => 'float'
     ];
 
     /**
@@ -29,7 +31,9 @@ class Team extends JetstreamTeam
     protected $fillable = [
         'name',
         'personal_team',
-        'slug'
+        'slug',
+        'club_id',
+        'start_at'
     ];
 
     /**
@@ -56,5 +60,10 @@ class Team extends JetstreamTeam
     public function stravaActivities()
     {
         return $this->hasMany(StravaActivity::class);
+    }
+
+    public function clubSyncronisations()
+    {
+        return $this->hasMany(ClubSyncronisation::class);
     }
 }

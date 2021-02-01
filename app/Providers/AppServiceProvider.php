@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Http\Livewire\TypeDistributionAgainstTimeChart;
+use App\Http\Livewire\TypeDistributionChart;
 use Illuminate\Support\ServiceProvider;
 use ConsoleTVs\Charts\Registrar as Charts;
 
@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(Charts $charts)
     {
         $charts->register([
-            TypeDistributionAgainstTimeChart::class
+            TypeDistributionChart::class
         ]);
     }
 }

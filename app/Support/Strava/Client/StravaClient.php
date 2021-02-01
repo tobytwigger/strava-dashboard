@@ -3,6 +3,7 @@
 namespace App\Support\Strava\Client;
 
 use App\Support\Strava\Client\Models\StravaActivity;
+use App\Support\Strava\Log\ConnectionLog;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Cache;
 
@@ -27,19 +28,32 @@ class StravaClient
 
     protected function request(string $method, string $uri, array $options = []): \Psr\Http\Message\ResponseInterface
     {
-        return $this->client()->request($method, $uri, array_merge([
-            'headers' => array_merge([
-                'Authorization' => sprintf('Bearer %s', $this->authToken)
-            ], $options['headers'] ?? [])
-        ], $options));
+        app(ConnectionLog::class)->debug(sprintf('Making a %s request to %s', $method, $uri));
+
+        try {
+            return $this->client()->request($method, $uri, array_merge([
+                'headers' => array_merge([
+                    'Authorization' => sprintf('Bearer %s', $this->authToken)
+                ], $options['headers'] ?? [])
+            ], $options));
+        } catch (\Exception $e) {
+            app(ConnectionLog::class)->error(sprintf('Request failed with code %d: %s', $e->getCode(), $e->getMessage()));
+            throw $e;
+        }
     }
 
-    public function getClubActivityPage(int $clubId, int $page)
+    /**
+     * @param int $clubId
+     * @param int $page
+     * @return StravaActivity[]|array
+     * @throws \Exception
+     */
+    public function getClubActivityPage(int $clubId, int $page): array
     {
         $response = $this->request('GET', sprintf('clubs/%s/activities', $clubId), [
             'query' =>  [
                 'page' => $page,
-                'per_page' => 100
+                'per_page' => 300
             ]
         ]);
 
@@ -48,7 +62,7 @@ class StravaClient
             true
         );
 
-        return array_map(function(array $parameters) {
+        $result = array_map(function(array $parameters) {
             return StravaActivity::make(
                 $this->teamId,
                 $parameters['name'] ?? null,
@@ -59,30 +73,34 @@ class StravaClient
                 $parameters['type'] ?? 'Other'
             );
         }, $content);
+
+        app(ConnectionLog::class)->debug(sprintf('Retrieved activities for club %d, page %d', $clubId, $page));
+
+        return $result;
     }
 
     /**
-     *
      * @param int $clubId
      * @return array|StravaActivity[]
      */
-    public function getNewClubActivities(int $clubId): array
+    public function getClubActivities(int $clubId): array
     {
+        app(ConnectionLog::class)->info(sprintf('About to get all club activities'));
+
         $activities = [];
-        $pageCacheKey = sprintf('strava.club-activities.sync.%s', $clubId);
-        $page = Cache::get($pageCacheKey, 1);
+        $page = 1;
+
         do {
             $activityPage = $this->getClubActivityPage($clubId, $page);
-            $activityCount = count($activityPage);
-            if($activityCount > 0) {
+            if(count($activityPage) > 0) {
                 array_push($activities, ...$activityPage);
                 $page++;
-                Cache::put($pageCacheKey, $page);
             }
         } while (count($activityPage) > 0);
 
-        return $activities;
+        app(ConnectionLog::class)->success(sprintf('Retrieved all activities for club %d from Strava.', $clubId));
 
+        return $activities;
     }
 
 }

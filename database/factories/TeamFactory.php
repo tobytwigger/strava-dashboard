@@ -26,6 +26,8 @@ class TeamFactory extends Factory
             'name' => $this->faker->unique()->company,
             'user_id' => User::factory(),
             'personal_team' => true,
+            'slug' => $this->faker->unique()->word,
+            'club_id' => $this->faker->numberBetween(111111, 999999)
         ];
     }
 }
